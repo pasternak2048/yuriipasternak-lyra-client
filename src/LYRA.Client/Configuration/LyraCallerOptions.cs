@@ -1,30 +1,18 @@
-﻿using LYRA.Security.Enums;
+﻿using LYRA.Client.Models;
+using LYRA.Security.Enums;
 
 namespace LYRA.Client.Configuration
 {
     /// <summary>
-    /// Configuration options for the LYRA caller (used to sign outgoing requests).
+    /// Configuration options for the LYRA Caller, allowing registration of multiple trusted touchpoints
+    /// that can sign outgoing requests using different secrets and contexts.
     /// </summary>
     public class LyraCallerOptions
     {
         /// <summary>
-        /// Unique system name of the caller (e.g., "gateway@bcorp").
+        /// A collection of touchpoints that represent the caller's identities, each with its own secret,
+        /// context, and signature algorithm. One of them is selected dynamically during signing.
         /// </summary>
-        public string SystemName { get; set; } = null!;
-
-        /// <summary>
-        /// Unique system name of the expected target (e.g., "billing@acorp").
-        /// </summary>
-        public string TargetSystemName { get; set; } = null!;
-
-        /// <summary>
-        /// Secret key used for signing requests (HMAC or other supported method).
-        /// </summary>
-        public string Secret { get; set; } = null!;
-
-        /// <summary>
-        /// Context in which the request is made (Http, Event, Cache, etc.).
-        /// </summary>
-        public AccessContext Context { get; set; } = AccessContext.Http;
+        public List<LyraTouchpoint> Touchpoints { get; set; } = new();
     }
 }
