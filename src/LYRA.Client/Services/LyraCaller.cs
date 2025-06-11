@@ -8,8 +8,10 @@ using Microsoft.Extensions.Options;
 namespace LYRA.Client.Services
 {
     /// <summary>
-    /// Default implementation of ILyraCaller that generates LYRA signature headers for outgoing requests.
+    /// Defines a service responsible for generating LYRA-compliant signature headers for outgoing requests.
+    /// Supports multiple caller touchpoints with individual configuration.
     /// </summary>
+
     public class LyraCaller : ILyraCaller
     {
         private readonly LyraCallerOptions _options;
@@ -21,49 +23,61 @@ namespace LYRA.Client.Services
             _stringBuilder = stringBuilder;
         }
 
-        public async Task<IDictionary<string, string>> GenerateSignatureHeadersAsync(string method, string path, string? payload = null)
+        /// <inheritdoc/>
+        public async Task<IDictionary<string, string>> GenerateSignatureHeadersAsync(
+            string method,
+            string path,
+            string targetSystemName,
+            string? payload = null,
+            string? callerSystemName = null)
         {
-            var headers = new Dictionary<string, string>();
+            var touchpoint = !string.IsNullOrWhiteSpace(callerSystemName)
+                ? _options.Touchpoints.FirstOrDefault(t => t.SystemName == callerSystemName)
+                : _options.Touchpoints.FirstOrDefault();
+
+            if (touchpoint == null)
+                throw new InvalidOperationException("No suitable touchpoint found for LYRA signature generation.");
 
             // Compute payload hash
-            string payloadHash = payload != null
+            var payloadHash = payload != null
                 ? EncryptionHelper.ComputeSha512(payload)
                 : string.Empty;
 
             // Generate timestamp
-            string timestamp = DateTimeOffset.UtcNow.ToString("O");
+            var timestamp = DateTimeOffset.UtcNow.ToString("O");
 
             // Create VerifyRequest model
             var request = new VerifyRequest
             {
-                Caller = _options.SystemName,
-                Target = _options.TargetSystemName,
+                Caller = touchpoint.SystemName,
+                Target = targetSystemName,
                 Method = method,
                 Path = path,
                 Payload = payload,
                 PayloadHash = payloadHash,
                 Timestamp = timestamp,
-                Context = _options.Context
+                Context = touchpoint.Context
             };
 
             // Generate canonical string to sign
-            string stringToSign = _stringBuilder.BuildStringToSign(request);
-
-            // Sign the string
-            string signature = EncryptionHelper.ComputeHmacSha512(stringToSign, _options.Secret);
+            var stringToSign = _stringBuilder.BuildStringToSign(request);
+            var signature = EncryptionHelper.ComputeHmacSha512(stringToSign, touchpoint.Secret); // TODO: support RSA etc.
 
             request.Signature = signature;
 
             // Add headers
-            headers["caller"] = request.Caller;
-            headers["target"] = request.Target;
-            headers["method"] = request.Method;
-            headers["path"] = request.Path;
-            headers["payload"] = request.Payload ?? string.Empty;
-            headers["payloadHash"] = request.PayloadHash;
-            headers["timestamp"] = request.Timestamp;
-            headers["context"] = request.Context.ToString();
-            headers["signature"] = request.Signature;
+            var headers = new Dictionary<string, string>
+            {
+                ["caller"] = request.Caller,
+                ["target"] = request.Target,
+                ["method"] = request.Method,
+                ["path"] = request.Path,
+                ["payload"] = request.Payload ?? string.Empty,
+                ["payloadHash"] = request.PayloadHash,
+                ["timestamp"] = request.Timestamp,
+                ["context"] = request.Context.ToString(),
+                ["signature"] = request.Signature
+            };
 
             return await Task.FromResult(headers);
         }
