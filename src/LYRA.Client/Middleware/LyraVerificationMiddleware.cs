@@ -1,5 +1,6 @@
 ﻿using LYRA.Client.Configuration;
 using LYRA.Client.Constants;
+using LYRA.Client.Interfaces;
 using LYRA.Security.Enums;
 using LYRA.Security.Models.Verify;
 using Microsoft.AspNetCore.Http;
@@ -15,20 +16,16 @@ namespace LYRA.Client.Middleware
     public class LyraVerificationMiddleware
     {
         private readonly RequestDelegate _next;
-        private readonly LyraReceiverOptions _options;
-        private readonly HttpClient _httpClient;
+        private readonly ILyraReceiver _receiver;
 
         /// <summary>
         /// Initializes the middleware with the next delegate, LYRA options, and HTTP client factory.
         /// </summary>
         public LyraVerificationMiddleware(
-            RequestDelegate next,
-            IOptions<LyraReceiverOptions> options,
-            IHttpClientFactory httpClientFactory)
+        RequestDelegate next, ILyraReceiver receiver)
         {
             _next = next;
-            _options = options.Value;
-            _httpClient = httpClientFactory.CreateClient(nameof(LyraVerificationMiddleware));
+            _receiver = receiver;
         }
 
         /// <summary>
@@ -76,26 +73,15 @@ namespace LYRA.Client.Middleware
                 Signature = headers[LyraHeaderNames.Signature].ToString()
             };
 
-            try
-            {
-                var response = await _httpClient.PostAsJsonAsync(
-                    $"{_options.LyraServerHost}/api/verify",
-                    verifyRequest);
+            var result = await _receiver.VerifyAsync(verifyRequest);
 
-                if (!response.IsSuccessStatusCode)
-                {
-                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                    await context.Response.WriteAsync($"LYRA verification failed: {response.StatusCode}");
-                    return;
-                }
-            }
-            catch (Exception ex)
-            {
-                context.Response.StatusCode = StatusCodes.Status502BadGateway;
-                await context.Response.WriteAsync($"LYRA verification error: {ex.Message}");
-                return;
-            }
-
+            if (result == null || !result.IsSuccess)
+{
+    context.Response.StatusCode = result?.StatusCode ?? StatusCodes.Status403Forbidden;
+    var message = result?.ErrorMessage ?? "LYRA verification failed.";
+    await context.Response.WriteAsync(message);
+    return;
+}
             // Continue to next middleware
             await _next(context);
         }

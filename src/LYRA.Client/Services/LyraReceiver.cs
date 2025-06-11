@@ -10,7 +10,7 @@ namespace LYRA.Client.Services
     /// <summary>
     /// Default implementation of <see cref="ILyraReceiver"/> that sends signed request verification requests to LYRA.Server.
     /// </summary>
-    public class LyraReceiver : ILyraReceiver
+    internal class LyraReceiver : ILyraReceiver
     {
         private readonly LyraReceiverOptions _options;
         private readonly IHttpClientFactory _httpClientFactory;
@@ -20,7 +20,7 @@ namespace LYRA.Client.Services
         /// </summary>
         /// <param name="options">The receiver configuration options.</param>
         /// <param name="httpClientFactory">Factory used to create HTTP clients.</param>
-        public LyraReceiver(
+        internal LyraReceiver(
             IOptions<LyraReceiverOptions> options,
             IHttpClientFactory httpClientFactory)
         {
