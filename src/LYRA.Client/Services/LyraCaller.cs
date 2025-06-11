@@ -1,4 +1,5 @@
 ﻿using LYRA.Client.Configuration;
+using LYRA.Client.Constants;
 using LYRA.Client.Interfaces;
 using LYRA.Security.Models.Verify;
 using LYRA.Security.Signature;
@@ -68,15 +69,15 @@ namespace LYRA.Client.Services
             // Add headers
             var headers = new Dictionary<string, string>
             {
-                ["caller"] = request.Caller,
-                ["target"] = request.Target,
-                ["method"] = request.Method,
-                ["path"] = request.Path,
-                ["payload"] = request.Payload ?? string.Empty,
-                ["payloadHash"] = request.PayloadHash,
-                ["timestamp"] = request.Timestamp,
-                ["context"] = request.Context.ToString(),
-                ["signature"] = request.Signature
+                [LyraHeaderNames.Caller] = request.Caller,
+                [LyraHeaderNames.Target] = request.Target,
+                [LyraHeaderNames.Method] = request.Method,
+                [LyraHeaderNames.Path] = request.Path,
+                [LyraHeaderNames.Payload] = request.Payload ?? string.Empty,
+                [LyraHeaderNames.PayloadHash] = request.PayloadHash,
+                [LyraHeaderNames.Timestamp] = request.Timestamp,
+                [LyraHeaderNames.Context] = request.Context.ToString(),
+                [LyraHeaderNames.Signature] = request.Signature
             };
 
             return await Task.FromResult(headers);
