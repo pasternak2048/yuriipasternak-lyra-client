@@ -29,16 +29,41 @@ namespace LYRA.Client.Services
         }
 
         /// <inheritdoc />
-        public async Task<VerifyResponse?> VerifyAsync(VerifyRequest request)
+        public async Task<VerifyResponse> VerifyAsync(VerifyRequest request)
         {
             var client = _httpClientFactory.CreateClient(nameof(LyraVerificationMiddleware));
 
-            var response = await client.PostAsJsonAsync($"{_options.LyraServerHost.TrimEnd('/')}/api/verify", request);
+            HttpResponseMessage response;
+
+            try
+            {
+                response = await client.PostAsJsonAsync($"{_options.LyraServerHost.TrimEnd('/')}/api/verify", request);
+            }
+            catch (Exception ex)
+            {
+                return new VerifyResponse
+                {
+                    IsSuccess = false,
+                    ErrorMessage = $"Failed to contact LYRA.Server: {ex.Message}"
+                };
+            }
 
             if (!response.IsSuccessStatusCode)
-                return null;
+            {
+                return new VerifyResponse
+                {
+                    IsSuccess = false,
+                    ErrorMessage = $"LYRA.Server returned status code {(int)response.StatusCode}: {response.ReasonPhrase}"
+                };
+            }
 
-            return await response.Content.ReadFromJsonAsync<VerifyResponse>();
+            var result = await response.Content.ReadFromJsonAsync<VerifyResponse>();
+
+            return result ?? new VerifyResponse
+            {
+                IsSuccess = false,
+                ErrorMessage = "Empty or invalid response from LYRA.Server."
+            };
         }
     }
 }

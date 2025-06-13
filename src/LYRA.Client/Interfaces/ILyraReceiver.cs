@@ -14,6 +14,6 @@ namespace LYRA.Client.Interfaces
         /// <returns>
         /// A <see cref="VerifyResponse"/> if verification succeeds, or <c>null</c> if the request is invalid or unverifiable.
         /// </returns>
-        Task<VerifyResponse?> VerifyAsync(VerifyRequest request);
+        Task<VerifyResponse> VerifyAsync(VerifyRequest request);
     }
 }
