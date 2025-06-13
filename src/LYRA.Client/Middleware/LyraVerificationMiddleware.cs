@@ -16,7 +16,7 @@ namespace LYRA.Client.Middleware
         private readonly ILyraReceiver _receiver;
 
         /// <summary>
-        /// Initializes the middleware with the next delegate, LYRA options, and HTTP client factory.
+        /// Initializes the middleware with the next delegate and LYRA verification service.
         /// </summary>
         public LyraVerificationMiddleware(RequestDelegate next, ILyraReceiver receiver)
         {
@@ -32,55 +32,66 @@ namespace LYRA.Client.Middleware
         {
             var headers = context.Request.Headers;
 
-            // Check required headers
-            if (!headers.ContainsKey(LyraHeaderNames.Caller) ||
-                !headers.ContainsKey(LyraHeaderNames.Target) ||
-                !headers.ContainsKey(LyraHeaderNames.Method) ||
-                !headers.ContainsKey(LyraHeaderNames.Path) ||
-                !headers.ContainsKey(LyraHeaderNames.PayloadHash) ||
-                !headers.ContainsKey(LyraHeaderNames.Timestamp) ||
-                !headers.ContainsKey(LyraHeaderNames.Context) ||
-                !headers.ContainsKey(LyraHeaderNames.Signature))
+            // Required LYRA headers
+            var requiredHeaders = new[]
             {
-                context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                await context.Response.WriteAsync("Missing required LYRA signature headers.");
-                return;
-            }
-
-            // Attempt to parse context enum
-            if (!Enum.TryParse<AccessContext>(headers[LyraHeaderNames.Context].ToString(), out var contextEnum))
-            {
-                context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                await context.Response.WriteAsync("Invalid LYRA context header.");
-                return;
-            }
-
-            // Construct verification request
-            var verifyRequest = new VerifyRequest
-            {
-                Caller = headers[LyraHeaderNames.Caller].ToString(),
-                Target = headers[LyraHeaderNames.Target].ToString(),
-                Method = headers[LyraHeaderNames.Method].ToString(),
-                Path = headers[LyraHeaderNames.Path].ToString(),
-                Payload = headers[LyraHeaderNames.Payload].ToString(),
-                PayloadHash = headers[LyraHeaderNames.PayloadHash].ToString(),
-                Timestamp = headers[LyraHeaderNames.Timestamp].ToString(),
-                Context = contextEnum,
-                Signature = headers[LyraHeaderNames.Signature].ToString()
+                LyraHeaderNames.Caller,
+                LyraHeaderNames.Target,
+                LyraHeaderNames.Method,
+                LyraHeaderNames.Path,
+                LyraHeaderNames.PayloadHash,
+                LyraHeaderNames.Timestamp,
+                LyraHeaderNames.Context,
+                LyraHeaderNames.Signature
             };
 
-            var result = await _receiver.VerifyAsync(verifyRequest);
-
-            if (result == null || !result.IsSuccess)
+            // Check missing headers
+            var missing = requiredHeaders.Where(h => !headers.ContainsKey(h)).ToList();
+            if (missing.Any())
             {
-                context.Response.StatusCode = result?.StatusCode ?? StatusCodes.Status403Forbidden;
-                var message = result?.ErrorMessage ?? "LYRA verification failed.";
-                await context.Response.WriteAsync(message);
+                await Fail(context, StatusCodes.Status400BadRequest,
+                    $"Missing required LYRA headers: {string.Join(", ", missing)}");
                 return;
             }
 
-            // Continue to next middleware
+            // Parse AccessContext
+            if (!Enum.TryParse<AccessContext>(headers[LyraHeaderNames.Context].ToString(), ignoreCase: true, out var contextEnum))
+            {
+                await Fail(context, StatusCodes.Status400BadRequest, "Invalid LYRA context header.");
+                return;
+            }
+
+            // Construct VerifyRequest
+            var verifyRequest = new VerifyRequest
+            {
+                Caller = headers[LyraHeaderNames.Caller]!,
+                Target = headers[LyraHeaderNames.Target]!,
+                Method = headers[LyraHeaderNames.Method]!,
+                Path = headers[LyraHeaderNames.Path]!,
+                Payload = headers.TryGetValue(LyraHeaderNames.Payload, out var payload) ? payload.ToString() : null,
+                PayloadHash = headers[LyraHeaderNames.PayloadHash]!,
+                Timestamp = headers[LyraHeaderNames.Timestamp]!,
+                Context = contextEnum,
+                Signature = headers[LyraHeaderNames.Signature]!
+            };
+
+            // Verify
+            var result = await _receiver.VerifyAsync(verifyRequest);
+
+            if (result is not { IsSuccess: true })
+            {
+                await Fail(context, result?.StatusCode ?? StatusCodes.Status403Forbidden,
+                    result?.ErrorMessage ?? "LYRA verification failed.");
+                return;
+            }
+
             await _next(context);
+        }
+
+        private static async Task Fail(HttpContext context, int statusCode, string message)
+        {
+            context.Response.StatusCode = statusCode;
+            await context.Response.WriteAsync(message);
         }
     }
 }
