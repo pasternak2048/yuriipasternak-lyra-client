@@ -1,11 +1,8 @@
-﻿using LYRA.Client.Configuration;
-using LYRA.Client.Constants;
+﻿using LYRA.Client.Constants;
 using LYRA.Client.Interfaces;
 using LYRA.Security.Enums;
 using LYRA.Security.Models.Verify;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Options;
-using System.Net.Http.Json;
 
 namespace LYRA.Client.Middleware
 {
@@ -21,8 +18,7 @@ namespace LYRA.Client.Middleware
         /// <summary>
         /// Initializes the middleware with the next delegate, LYRA options, and HTTP client factory.
         /// </summary>
-        public LyraVerificationMiddleware(
-        RequestDelegate next, ILyraReceiver receiver)
+        public LyraVerificationMiddleware(RequestDelegate next, ILyraReceiver receiver)
         {
             _next = next;
             _receiver = receiver;
@@ -76,12 +72,13 @@ namespace LYRA.Client.Middleware
             var result = await _receiver.VerifyAsync(verifyRequest);
 
             if (result == null || !result.IsSuccess)
-{
-    context.Response.StatusCode = result?.StatusCode ?? StatusCodes.Status403Forbidden;
-    var message = result?.ErrorMessage ?? "LYRA verification failed.";
-    await context.Response.WriteAsync(message);
-    return;
-}
+            {
+                context.Response.StatusCode = result?.StatusCode ?? StatusCodes.Status403Forbidden;
+                var message = result?.ErrorMessage ?? "LYRA verification failed.";
+                await context.Response.WriteAsync(message);
+                return;
+            }
+
             // Continue to next middleware
             await _next(context);
         }
