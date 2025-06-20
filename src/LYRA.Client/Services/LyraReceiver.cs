@@ -20,7 +20,7 @@ namespace LYRA.Client.Services
         /// </summary>
         /// <param name="options">The receiver configuration options.</param>
         /// <param name="httpClientFactory">Factory used to create HTTP clients.</param>
-        internal LyraReceiver(
+        public LyraReceiver(
             IOptions<LyraReceiverOptions> options,
             IHttpClientFactory httpClientFactory)
         {
@@ -37,14 +37,15 @@ namespace LYRA.Client.Services
 
             try
             {
-                response = await client.PostAsJsonAsync($"{_options.LyraServerHost.TrimEnd('/')}/api/verify", request);
+                Console.WriteLine($"REAL VERIFY CALL → {_options.LyraServerHost}");
+                response = await client.PostAsJsonAsync($"{_options.LyraServerHost.TrimEnd('/')}/api/verification/verify", request);
             }
             catch (Exception ex)
             {
                 return new VerifyResponse
                 {
                     IsSuccess = false,
-                    ErrorMessage = $"Failed to contact LYRA.Server: {ex.Message}"
+                    ErrorMessage = $"From: {_options.LyraServerHost} -> {ex.Message}"
                 };
             }
 
