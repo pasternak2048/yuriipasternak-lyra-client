@@ -1,6 +1,6 @@
 ﻿using LYRA.Client.Configuration;
-using LYRA.Client.Constants;
 using LYRA.Client.Interfaces;
+using LYRA.Client.Models;
 using LYRA.Security.Models.Verify;
 using LYRA.Security.Signature;
 using LYRA.Security.Utilities.Security;
@@ -25,7 +25,7 @@ namespace LYRA.Client.Services
         }
 
         /// <inheritdoc/>
-        public async Task<IDictionary<string, string>> GenerateSignatureHeadersAsync(
+        public SignedRequestMetadata GenerateSignedRequest(
             string method,
             string path,
             string targetSystemName,
@@ -39,15 +39,12 @@ namespace LYRA.Client.Services
             if (touchpoint == null)
                 throw new InvalidOperationException("No suitable touchpoint found for LYRA signature generation.");
 
-            // Compute payload hash
             var payloadHash = payload != null
                 ? EncryptionHelper.ComputeSha512(payload)
                 : string.Empty;
 
-            // Generate timestamp
-            var timestamp = DateTimeOffset.UtcNow.ToString("O");
+            var timestamp = DateTime.UtcNow.ToString("O");
 
-            // Create VerifyRequest model
             var request = new VerifyRequest
             {
                 Caller = touchpoint.SystemName,
@@ -60,27 +57,14 @@ namespace LYRA.Client.Services
                 Context = touchpoint.Context
             };
 
-            // Generate canonical string to sign
             var stringToSign = _stringBuilder.BuildStringToSign(request);
-            var signature = EncryptionHelper.ComputeHmacSha512(stringToSign, touchpoint.Secret); // TODO: support RSA etc.
+            var signature = EncryptionHelper.ComputeHmacSha512(stringToSign, touchpoint.Secret);
 
-            request.Signature = signature;
-
-            // Add headers
-            var headers = new Dictionary<string, string>
+            return new SignedRequestMetadata
             {
-                [LyraHeaderNames.Caller] = request.Caller,
-                [LyraHeaderNames.Target] = request.Target,
-                [LyraHeaderNames.Method] = request.Method,
-                [LyraHeaderNames.Path] = request.Path,
-                [LyraHeaderNames.Payload] = request.Payload ?? string.Empty,
-                [LyraHeaderNames.PayloadHash] = request.PayloadHash,
-                [LyraHeaderNames.Timestamp] = request.Timestamp,
-                [LyraHeaderNames.Context] = request.Context.ToString(),
-                [LyraHeaderNames.Signature] = request.Signature
+                Request = request,
+                Signature = signature
             };
-
-            return await Task.FromResult(headers);
         }
     }
 }
