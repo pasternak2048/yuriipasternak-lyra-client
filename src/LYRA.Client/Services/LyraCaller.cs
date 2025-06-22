@@ -1,7 +1,6 @@
 ﻿using LYRA.Client.Configuration;
 using LYRA.Client.Interfaces;
 using LYRA.Client.Models;
-using LYRA.Security.Models.Verify;
 using LYRA.Security.Signature;
 using LYRA.Security.Utilities.Security;
 using Microsoft.Extensions.Options;
@@ -25,7 +24,7 @@ namespace LYRA.Client.Services
         }
 
         /// <inheritdoc/>
-        public SignedRequestMetadata GenerateSignedRequest(
+        public LyraMetadata GenerateSignedMetadata(
             string method,
             string path,
             string targetSystemName,
@@ -36,16 +35,27 @@ namespace LYRA.Client.Services
                 ? _options.Touchpoints.FirstOrDefault(t => t.SystemName == callerSystemName)
                 : _options.Touchpoints.FirstOrDefault();
 
-            if (touchpoint == null)
+            if (touchpoint is null)
                 throw new InvalidOperationException("No suitable touchpoint found for LYRA signature generation.");
 
-            var payloadHash = payload != null
+            var payloadHash = !string.IsNullOrEmpty(payload)
                 ? EncryptionHelper.ComputeSha512(payload)
                 : string.Empty;
 
             var timestamp = DateTime.UtcNow.ToString("O");
 
-            var request = new VerifyRequest
+            var stringToSign = _stringBuilder.BuildStringToSign(
+                caller: touchpoint.SystemName,
+                target: targetSystemName,
+                method: method,
+                path: path,
+                payloadHash: payloadHash,
+                timestamp: timestamp
+            );
+
+            var signature = EncryptionHelper.ComputeHmacSha512(stringToSign, touchpoint.Secret);
+
+            return new LyraMetadata
             {
                 Caller = touchpoint.SystemName,
                 Target = targetSystemName,
@@ -54,15 +64,7 @@ namespace LYRA.Client.Services
                 Payload = payload,
                 PayloadHash = payloadHash,
                 Timestamp = timestamp,
-                Context = touchpoint.Context
-            };
-
-            var stringToSign = _stringBuilder.BuildStringToSign(request);
-            var signature = EncryptionHelper.ComputeHmacSha512(stringToSign, touchpoint.Secret);
-
-            return new SignedRequestMetadata
-            {
-                Request = request,
+                Context = touchpoint.Context,
                 Signature = signature
             };
         }
