@@ -2,6 +2,7 @@
 using LYRA.Client.Interfaces;
 using LYRA.Client.Middleware;
 using LYRA.Client.Services;
+using LYRA.Client.Signers.Http;
 using LYRA.Security.Signature;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -13,11 +14,14 @@ namespace LYRA.Client.Extensions
     public static class ServiceCollectionExtensions
     {
         /// <summary>
-        /// Registers LYRA Caller functionality for generating signature headers.
+        /// Registers LYRA client components required to sign outgoing requests as a caller system.
+        /// Supports multiple signature string builders and caller touchpoint configuration.
         /// </summary>
-        /// <param name="services">The IServiceCollection to add services to.</param>
-        /// <param name="configure">Delegate to configure LyraCallerOptions.</param>
-        /// <returns>The updated IServiceCollection.</returns>
+        /// <param name="services">The dependency injection container.</param>
+        /// <param name="configure">
+        /// Delegate used to configure <see cref="LyraCallerOptions"/> including touchpoints and caller identity.
+        /// </param>
+        /// <returns>The updated <see cref="IServiceCollection"/>.</returns>
         public static IServiceCollection AddLyraAsCaller(
             this IServiceCollection services,
             Action<LyraCallerOptions> configure)
