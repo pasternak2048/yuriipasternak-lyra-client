@@ -15,12 +15,12 @@ namespace LYRA.Client.Services
     public class LyraCaller : ILyraCaller
     {
         private readonly LyraCallerOptions _options;
-        private readonly ISignatureStringBuilder _stringBuilder;
+        private readonly SignatureStringBuilderFactory _factory;
 
-        public LyraCaller(IOptions<LyraCallerOptions> options, ISignatureStringBuilder stringBuilder)
+        public LyraCaller(IOptions<LyraCallerOptions> options, SignatureStringBuilderFactory factory)
         {
             _options = options.Value;
-            _stringBuilder = stringBuilder;
+            _factory = factory;
         }
 
         /// <inheritdoc/>
@@ -44,7 +44,9 @@ namespace LYRA.Client.Services
 
             var timestamp = DateTime.UtcNow.ToString("O");
 
-            var stringToSign = _stringBuilder.BuildStringToSign(
+            var builder = _factory.GetBuilder(touchpoint.Context);
+
+            var stringToSign = builder.BuildStringToSign(
                 caller: touchpoint.SystemName,
                 target: targetSystemName,
                 method: method,
