@@ -31,8 +31,8 @@ namespace LYRA.Client.Signers.Http
             var payload = JsonSerializer.Serialize(body);
 
             var metadata = _lyra.GenerateSignedMetadata(
-                method: method.Method,
-                path: path,
+                method: method.Method.ToLowerInvariant(),
+                path: path.ToLowerInvariant(),
                 targetSystemName: targetSystem,
                 payload: payload,
                 callerSystemName: callerSystem);
