@@ -29,7 +29,7 @@ namespace LYRA.Client.Extensions
             services.Configure(configure);
 
             services.AddTransient<ISignatureStringBuilder, HttpSignatureStringBuilder>();
-            services.AddTransient<ISignatureStringBuilder, CacheSignatureStringBuilder>();
+            // TODO: services.AddTransient<ISignatureStringBuilder, CacheSignatureStringBuilder>();
             services.AddSingleton<SignatureStringBuilderFactory>();
 
             services.AddSingleton<ILyraCaller, LyraCaller>();
