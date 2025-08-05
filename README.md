@@ -83,7 +83,7 @@ These headers are parsed by the receiver and verified via `LYRA.Server`.
 
 - ✅ Deterministic, platform-agnostic signature creation
 - ✅ Supports multiple `Touchpoints` (multi-service apps)
-- ✅ Reuses contracts from `LYRA.Security`
+- ✅ Reuses contracts from **[LYRA.Security](https://github.com/pasternak2048/yuriipasternak-lyra-security)**
 - ✅ Easily pluggable in any .NET app — Web, API, Worker
 - ✅ No third-party dependencies
 
@@ -92,7 +92,7 @@ These headers are parsed by the receiver and verified via `LYRA.Server`.
 ## Tech Stack
 
 - C# 12 / .NET 8
-- LYRA.Security
+- **[LYRA.Security](https://github.com/pasternak2048/yuriipasternak-lyra-security)**
 - System.Security.Cryptography
 - System.Text.Json / Http
 
