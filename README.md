@@ -9,11 +9,9 @@
 **LYRA** (*Let Yourself Remain Authenticated*) is a self-hosted authorization system for verifying **signed requests** between **trusted systems**.  
 It ensures that each request across service or company boundaries is intentional, validated, and safe — without inspecting the business payload.
 
-> 🔐 Built for signed trust. Designed to run anywhere. Depends on no one.
-
 ---
 
-## 📦 What is LYRA.Client?
+## What is LYRA.Client?
 
 **LYRA.Client** is a lightweight SDK for signing outgoing requests and verifying incoming ones via a centralized **LYRA.Server**.
 
@@ -21,7 +19,7 @@ It enables trust-based communication between services using cryptographic signat
 
 ---
 
-## ✍️ What does LYRA.Client do?
+## What does LYRA.Client do?
 
 - ✅ Generates `GenericMetadata` for a given request
 - ✅ Computes the `payloadHash` (SHA-512 of body)
@@ -30,7 +28,7 @@ It enables trust-based communication between services using cryptographic signat
 
 ---
 
-## 📦 Sample Usage
+## Sample Usage
 
 ```csharp
 var metadata = new GenericMetadata
@@ -56,7 +54,7 @@ var verifyRequest = new VerifyRequest
 
 ---
 
-## 📤 Example: Adding to HTTP Headers
+## Example: Adding to HTTP Headers
 
 ```csharp
 request.Headers.Add("X-Lyra-Caller", signed.CallerSystemName);
@@ -69,7 +67,7 @@ These headers are parsed by the receiver and verified via `LYRA.Server`.
 
 ---
 
-## 🧠 Core Concepts
+## Core Concepts
 
 | Concept             | Description |
 |--------------------|-------------|
@@ -81,7 +79,7 @@ These headers are parsed by the receiver and verified via `LYRA.Server`.
 
 ---
 
-## ✅ Highlights
+## Highlights
 
 - ✅ Deterministic, platform-agnostic signature creation
 - ✅ Supports multiple `Touchpoints` (multi-service apps)
@@ -91,7 +89,7 @@ These headers are parsed by the receiver and verified via `LYRA.Server`.
 
 ---
 
-## 🔧 Tech Stack
+## Tech Stack
 
 - C# 12 / .NET 8
 - LYRA.Security
@@ -100,7 +98,7 @@ These headers are parsed by the receiver and verified via `LYRA.Server`.
 
 ---
 
-## 📄 License
+## License
 
 Licensed under the [MIT License](LICENSE).
 
