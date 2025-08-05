@@ -1,59 +1,53 @@
-﻿using LYRA.Client.Configuration;
-using LYRA.Client.Interfaces;
-using LYRA.Client.Middleware;
-using LYRA.Client.Services;
-using LYRA.Client.Signers.Http;
-using LYRA.Security.Signature;
+﻿using LYRA.Client.Abstractions;
+using LYRA.Client.Configuration;
+using LYRA.Client.Core;
+using LYRA.Client.Touchpoints;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LYRA.Client.Extensions
 {
-    /// <summary>
-    /// Extension methods for registering LYRA caller services.
-    /// </summary>
-    public static class ServiceCollectionExtensions
-    {
-        /// <summary>
-        /// Registers LYRA client components required to sign outgoing requests as a caller system.
-        /// Supports multiple signature string builders and caller touchpoint configuration.
-        /// </summary>
-        /// <param name="services">The dependency injection container.</param>
-        /// <param name="configure">
-        /// Delegate used to configure <see cref="LyraCallerOptions"/> including touchpoints and caller identity.
-        /// </param>
-        /// <returns>The updated <see cref="IServiceCollection"/>.</returns>
-        public static IServiceCollection AddLyraAsCaller(
-            this IServiceCollection services,
-            Action<LyraCallerOptions> configure)
-        {
-            services.Configure(configure);
+	/// <summary>
+	/// Provides extension methods to register LYRA client services into the DI container.
+	/// </summary>
+	public static class ServiceCollectionExtensions
+	{
+		/// <summary>
+		/// Registers LYRA for outbound signing (caller).
+		/// </summary>
+		public static IServiceCollection AddLyraSigningClient(
+			this IServiceCollection services,
+			Action<LyraSigningOptions> configure)
+		{
+			var options = new LyraSigningOptions();
+			configure(options);
 
-            services.AddTransient<ISignatureStringBuilder, HttpSignatureStringBuilder>();
-            // TODO: services.AddTransient<ISignatureStringBuilder, CacheSignatureStringBuilder>();
-            services.AddSingleton<SignatureStringBuilderFactory>();
+			services.AddSingleton<ITouchpointResolver>(new InMemoryTouchpointResolver(options.Touchpoints));
+			services.AddSingleton<SigningService>();
+			services.AddSingleton<ILyraClient, LyraClient>();
 
-            services.AddSingleton<ILyraCaller, LyraCaller>();
+			return services;
+		}
 
-            return services;
-        }
+		/// <summary>
+		/// Registers LYRA for inbound verification (receiver) over HTTP.
+		/// </summary>
+		/// <param name="services">DI container</param>
+		/// <param name="serverBaseUrl">Base URL of LYRA.Server (e.g., https://lyra.company.com/)</param>
+		/// <param name="verifyPath">Relative verify path (default: "api/verify")</param>
+		public static IServiceCollection AddLyraVerificationClient(
+			this IServiceCollection services,
+			string serverBaseUrl,
+			string verifyPath = "api/verify")
+		{
+			services.AddHttpClient<VerifyService>(client =>
+			{
+				client.BaseAddress = new Uri(serverBaseUrl, UriKind.Absolute);
+			});
 
-        /// <summary>
-        /// Registers LYRA Receiver functionality for verifying incoming requests via middleware or service.
-        /// </summary>
-        /// <param name="services">The IServiceCollection to add services to.</param>
-        /// <param name="configure">Delegate to configure LyraReceiverOptions (e.g. LYRA.Server host).</param>
-        /// <returns>The updated IServiceCollection.</returns>
-        public static IServiceCollection AddLyraAsReceiver(
-            this IServiceCollection services,
-            Action<LyraReceiverOptions> configure)
-        {
-            services.Configure(configure);
+			// Reuse the same ILyraClient facade
+			services.AddSingleton<ILyraClient, LyraClient>();
 
-            services.AddHttpClient(nameof(LyraVerificationMiddleware));
-
-            services.AddSingleton<ILyraReceiver, LyraReceiver>();
-
-            return services;
-        }
-    }
+			return services;
+		}
+	}
 }
