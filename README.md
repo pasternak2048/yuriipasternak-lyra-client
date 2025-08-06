@@ -1,12 +1,9 @@
-# 🛡️ LYRA.Client
-
-**LYRA. She signs. She verifies. She protects.**
-
+# 🛡️LYRA. Let Yourself Remain Authenticated.
 ---
 
-## 🌐 What is LYRA?
+## What is LYRA?
 
-**LYRA** (*Let Yourself Remain Authenticated*) is a self-hosted authorization system for verifying **signed requests** between **trusted systems**.  
+**LYRA** is a self-hosted authorization system for verifying **signed requests** between **trusted systems**.  
 It ensures that each request across service or company boundaries is intentional, validated, and safe — without inspecting the business payload.
 
 ---
@@ -102,4 +99,4 @@ These headers are parsed by the receiver and verified via `LYRA.Server`.
 
 Licensed under the [MIT License](LICENSE).
 
-**LYRA. She signs. She verifies. She protects.**
+**🛡️LYRA. Let Yourself Remain Authenticated.**
