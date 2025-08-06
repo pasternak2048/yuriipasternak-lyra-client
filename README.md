@@ -18,10 +18,10 @@ It enables trust-based communication between services using cryptographic signat
 
 ## What does LYRA.Client do?
 
-- ✅ Generates `GenericMetadata` for a given request
-- ✅ Computes the `payloadHash` (SHA-512 of body)
-- ✅ Constructs canonical `StringToSign` and signs it (HMAC, RSA)
-- ✅ Returns a ready-to-send `VerifyRequest`, or just `SignedMetadata` for headers
+- Generates `GenericMetadata` for a given request
+- Computes the `payloadHash` (SHA-512 of body)
+- Constructs canonical `StringToSign` and signs it (HMAC, RSA)
+- Returns a ready-to-send `VerifyRequest`, or just `SignedMetadata` for headers
 
 ---
 
@@ -78,11 +78,11 @@ These headers are parsed by the receiver and verified via `LYRA.Server`.
 
 ## Highlights
 
-- ✅ Deterministic, platform-agnostic signature creation
-- ✅ Supports multiple `Touchpoints` (multi-service apps)
-- ✅ Reuses contracts from **[LYRA.Security](https://github.com/pasternak2048/yuriipasternak-lyra-security)**
-- ✅ Easily pluggable in any .NET app — Web, API, Worker
-- ✅ No third-party dependencies
+- Deterministic, platform-agnostic signature creation
+- Supports multiple `Touchpoints` (multi-service apps)
+- Reuses contracts from **[LYRA.Security](https://github.com/pasternak2048/yuriipasternak-lyra-security)**
+- Easily pluggable in any .NET app — Web, API, Worker
+- No third-party dependencies
 
 ---
 
@@ -91,7 +91,7 @@ These headers are parsed by the receiver and verified via `LYRA.Server`.
 - C# 12 / .NET 8
 - **[LYRA.Security](https://github.com/pasternak2048/yuriipasternak-lyra-security)**
 - System.Security.Cryptography
-- System.Text.Json / Http
+- System.Text.Json
 
 ---
 
