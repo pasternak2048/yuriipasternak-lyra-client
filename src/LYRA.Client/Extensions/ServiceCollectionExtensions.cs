@@ -44,7 +44,6 @@ namespace LYRA.Client.Extensions
 				client.BaseAddress = new Uri(serverBaseUrl, UriKind.Absolute);
 			});
 
-			// Reuse the same ILyraClient facade
 			services.AddSingleton<ILyraClient, LyraClient>();
 
 			return services;
