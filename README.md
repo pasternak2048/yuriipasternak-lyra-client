@@ -1,120 +1,102 @@
-# 🛡️ LYRA.Client — *Sign and Verify Anywhere*
+# 🛡️LYRA. Let Yourself Remain Authenticated.
+---
 
-**LYRA.Client** is a lightweight SDK for signing outgoing HTTP requests and verifying incoming ones through a centralized **LYRA.Server**.
+## What is LYRA?
 
-It supports two modes of operation:
-- ✍️ **Caller mode**: signs outgoing requests and adds verification headers
-- 🛡️ **Receiver mode**: extracts headers, builds a `VerifyRequest`, and delegates signature validation to `LYRA.Server`
-
-> ⚡ Built for distributed systems. Ready for microservice trust boundaries.
+**LYRA** is a self-hosted authorization system for verifying **signed requests** between **trusted systems**.  
+It ensures that each request across service or company boundaries is intentional, validated, and safe — without inspecting the business payload.
 
 ---
 
-## 🌐 What is LYRA.Client?
+## What is LYRA.Client?
 
-- ✍️ **AsCaller** — signs requests with HMAC/RSA and adds `X-Lyra-*` headers
-- 🛡️ **AsReceiver** — verifies incoming requests using `LYRA.Server` via middleware
-- 🔐 **Powered by LYRA.Security** — reuses the same contracts, enums, and signature tools
+**LYRA.Client** is a lightweight SDK for signing outgoing requests and verifying incoming ones via a centralized **LYRA.Server**.
+
+It enables trust-based communication between services using cryptographic signatures and shared policies.
 
 ---
 
-## ⚙️ Setup
+## What does LYRA.Client do?
+
+- Generates `GenericMetadata` for a given request
+- Computes the `payloadHash` (SHA-512 of body)
+- Constructs canonical `StringToSign` and signs it (HMAC, RSA)
+- Returns a ready-to-send `VerifyRequest`, or just `SignedMetadata` for headers
+
+---
+
+## Sample Usage
 
 ```csharp
-services.AddLyraAsCaller(opts =>
+var metadata = new GenericMetadata
 {
-    opts.Touchpoints = new List<LyraTouchpoint>
-    {
-        new()
-        {
-            SystemName = "gateway@bcorp",
-            Secret = "topsecret",
-            Context = AccessContext.Http,
-            SignatureType = SignatureType.HmacSha512
-        }
-    };
-});
-
-services.AddLyraAsReceiver(opts =>
-{
-    opts.LyraServerHost = "https://lyra.acorp.com";
-});
-```
-
----
-
-## 📤 Caller Mode (Outbound Requests)
-
-> Use `ILyraCaller` to sign and send requests
-
-```csharp
-var request = new HttpRequestMessage(HttpMethod.Post, "/api/orders")
-{
-    Content = new StringContent(payloadJson, Encoding.UTF8, "application/json")
+    CallerSystemName = "gateway@bcorp",
+    TargetSystemName = "billing@acorp",
+    Action = "POST",
+    Resource = "/api/orders",
+    PayloadHash = EncryptionHelper.ComputeSha512(payload),
+    Timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString()
 };
 
-await _lyraCaller.SignRequestAsync(request, payloadJson);
-```
+var signer = new LyraSigner(touchpoint);
+var signed = signer.Sign(metadata);
 
-Adds headers like:
-```
-X-Lyra-Caller: gateway@bcorp
-X-Lyra-Timestamp: 2025-05-31T12:00:00Z
-X-Lyra-Payload-Hash: ...
-X-Lyra-Signature: ...
+var verifyRequest = new VerifyRequest
+{
+    Metadata = metadata,
+    Signed = signed,
+    RequestId = Guid.NewGuid().ToString()
+};
 ```
 
 ---
 
-## 📥 Receiver Mode (Inbound Verification)
-
-> Automatically verifies requests through middleware
+## Example: Adding to HTTP Headers
 
 ```csharp
-app.UseLyraVerification(); // Validates all incoming requests using LYRA.Server
+request.Headers.Add("X-Lyra-Caller", signed.CallerSystemName);
+request.Headers.Add("X-Lyra-Timestamp", metadata.Timestamp);
+request.Headers.Add("X-Lyra-Payload-Hash", metadata.PayloadHash);
+request.Headers.Add("X-Lyra-Signature", signed.Signature);
 ```
 
-- Extracts headers from request
-- Builds `VerifyRequest`
-- Sends to `LYRA.Server /api/verify`
-- Aborts request if invalid (403)
+These headers are parsed by the receiver and verified via `LYRA.Server`.
 
 ---
 
-## 🧠 Core Concepts
+## Core Concepts
 
 | Concept             | Description |
 |--------------------|-------------|
-| `LyraTouchpoint`    | Represents one identity for signing requests |
-| `AccessContext`     | Type of interaction: `Http`, `Event`, `Cache`, etc. |
-| `VerifyRequest`     | Built from headers and sent to `LYRA.Server` |
-| `SignatureType`     | Algorithm used for signing: HMAC, RSA, etc. |
+| `LyraTouchpoint`    | A system identity with secret and algorithm |
+| `GenericMetadata`   | Canonical fields that describe the request |
+| `SignedMetadata`    | The signature + metadata needed for verification |
+| `VerifyRequest`     | Bundles metadata + signature, sent to `LYRA.Server` |
+| `SignatureStringBuilder` | Builds the canonical string from metadata |
 
 ---
 
-## ✅ Highlights
+## Highlights
 
-- ✅ Built-in support for signing and verifying HTTP requests
-- ✅ No runtime dependencies beyond .NET + LYRA.Security
-- ✅ Centralized verification via LYRA.Server
-- ✅ Fully pluggable via DI and middleware
-- ✅ Seamlessly integrates with GLORIA and other trusted services
+- Deterministic, platform-agnostic signature creation
+- Supports multiple `Touchpoints` (multi-service apps)
+- Reuses contracts from **[LYRA.Security](https://github.com/pasternak2048/yuriipasternak-lyra-security)**
+- Easily pluggable in any .NET app — Web, API, Worker
+- No third-party dependencies
 
 ---
 
-## 🔧 Tech Stack
+## Tech Stack
 
 - C# 12 / .NET 8
-- LYRA.Security
-- System.Net.Http
-- Microsoft.Extensions.DependencyInjection
-- Designed to run in ASP.NET Core apps and background services
+- **[LYRA.Security](https://github.com/pasternak2048/yuriipasternak-lyra-security)**
+- System.Security.Cryptography
+- System.Text.Json
 
 ---
 
-## 📄 License
+## License
 
 Licensed under the [MIT License](LICENSE).
 
-**LYRA.Client. Sign it. Trust it. Forward it.**
-> *"Verification is just a request away."*
+**🛡️LYRA. Let Yourself Remain Authenticated.**
